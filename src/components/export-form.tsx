@@ -5,9 +5,9 @@ import {
   Icon,
   showToast,
   Toast,
-} from "@vicinae/api";
-import { useState } from "react";
-import { exportCommands } from "../storage";
+} from '@vicinae/api';
+import { useState } from 'react';
+import { exportCommands } from '../storage';
 
 interface ExportFormProps {
   onExportComplete: () => void | Promise<void>;
@@ -20,25 +20,25 @@ export default function ExportForm({ onExportComplete }: ExportFormProps) {
     const filePath = values.filePath;
 
     if (!filePath) {
-      setFilePathError("Please select a directory");
+      setFilePathError('Please select a directory');
       return;
     }
 
     const timestamp = new Date()
       .toISOString()
-      .replace(/[:.]/g, "-")
+      .replace(/[:.]/g, '-')
       .slice(0, -5);
     const fileName = `vicinae-snippets-commands-${timestamp}.json`;
     const fullPath = `${filePath}/${fileName}`;
 
     try {
-      const { writeFile } = await import("node:fs/promises");
+      const { writeFile } = await import('node:fs/promises');
       const jsonData = await exportCommands();
-      await writeFile(fullPath, jsonData, "utf-8");
+      await writeFile(fullPath, jsonData, 'utf-8');
 
       await showToast({
         style: Toast.Style.Success,
-        title: "Commands exported",
+        title: 'Commands exported',
         message: `Saved to ${fullPath}`,
       });
 
@@ -46,10 +46,10 @@ export default function ExportForm({ onExportComplete }: ExportFormProps) {
         await onExportComplete();
       }
     } catch (error) {
-      console.log("Error exporting commands:", error);
+      console.log('Error exporting commands:', error);
       await showToast({
         style: Toast.Style.Failure,
-        title: "Export failed",
+        title: 'Export failed',
         message: String(error),
       });
     }

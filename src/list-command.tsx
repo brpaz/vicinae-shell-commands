@@ -9,19 +9,21 @@ import {
   showToast,
   Toast,
   useNavigation,
-} from "@vicinae/api";
-import { useEffect, useMemo, useState } from "react";
-import CommandForm from "./components/command-form";
+} from '@vicinae/api';
+import { useEffect, useMemo, useState } from 'react';
+import CommandForm from './components/command-form';
+import VariableForm from './components/variable-form';
 import {
   deleteCommand,
   getAllCommands,
   togglePin,
   updateLastUsed,
-} from "./storage";
-import type { ShellCommand } from "./types";
+} from './storage';
+import type { ShellCommand } from './types';
+import { hasVariables } from './variables';
 
 function formatRelativeTime(timestamp?: number): string {
-  if (!timestamp) return "Never used";
+  if (!timestamp) return 'Never used';
 
   const now = Date.now();
   const diff = now - timestamp;
@@ -30,10 +32,10 @@ function formatRelativeTime(timestamp?: number): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (days > 0) return `${days} day${days > 1 ? "s" : ""} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-  if (minutes > 0) return `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
-  return "Just now";
+  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  return 'Just now';
 }
 
 function sortCommands(commands: ShellCommand[]): ShellCommand[] {
@@ -52,7 +54,7 @@ function sortCommands(commands: ShellCommand[]): ShellCommand[] {
 export default function Command() {
   const [allCommands, setAllCommands] = useState<ShellCommand[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [selectedTag, setSelectedTag] = useState<string>("all");
+  const [selectedTag, setSelectedTag] = useState<string>('all');
   const navigation = useNavigation();
 
   // Load all commands from storage
@@ -65,7 +67,7 @@ export default function Command() {
     } catch {
       await showToast({
         style: Toast.Style.Failure,
-        title: "Failed to load commands",
+        title: 'Failed to load commands',
       });
       setAllCommands([]);
     } finally {
@@ -81,7 +83,7 @@ export default function Command() {
 
   // Filter commands based on selected tag
   const commands = useMemo(() => {
-    if (selectedTag === "all") {
+    if (selectedTag === 'all') {
       return allCommands;
     }
     return allCommands.filter((cmd) => cmd.tags.includes(selectedTag));
@@ -112,16 +114,16 @@ export default function Command() {
     await loadCommands();
     await showToast({
       style: Toast.Style.Success,
-      title: command.isPinned ? "Command unpinned" : "Command pinned",
+      title: command.isPinned ? 'Command unpinned' : 'Command pinned',
     });
   };
 
   const handleDelete = async (command: ShellCommand) => {
     const confirmed = await confirmAlert({
-      title: "Delete Command",
+      title: 'Delete Command',
       message: `Are you sure you want to delete this command?`,
       primaryAction: {
-        title: "Delete",
+        title: 'Delete',
         style: Alert.ActionStyle.Destructive,
       },
     });
@@ -131,7 +133,7 @@ export default function Command() {
       await loadCommands();
       await showToast({
         style: Toast.Style.Success,
-        title: "Command deleted",
+        title: 'Command deleted',
       });
     }
   };
@@ -169,14 +171,14 @@ export default function Command() {
         !isLoading ? (
           <List.EmptyView
             title={
-              selectedTag === "all"
-                ? "No shell commands saved"
-                : "No commands with this tag"
+              selectedTag === 'all'
+                ? 'No shell commands saved'
+                : 'No commands with this tag'
             }
             description={
-              selectedTag === "all"
-                ? "Add your first command to get started"
-                : "Try selecting a different tag"
+              selectedTag === 'all'
+                ? 'Add your first command to get started'
+                : 'Try selecting a different tag'
             }
             actions={
               <ActionPanel>
@@ -204,22 +206,48 @@ export default function Command() {
             ]}
             actions={
               <ActionPanel>
-                <Action.Paste
-                  title="Paste Command"
-                  icon={Icon.Terminal}
-                  content={command.command}
-                  onPaste={() => handlePaste(command)}
-                />
-                <Action.CopyToClipboard
-                  title="Copy to Clipboard"
-                  icon={Icon.CopyClipboard}
-                  shortcut={{ modifiers: ["ctrl"], key: "c" }}
-                  content={command.command}
-                />
+                {hasVariables(command.command) ? (
+                  <>
+                    <Action.Push
+                      title="Paste Command"
+                      icon={Icon.Terminal}
+                      target={
+                        <VariableForm
+                          command={command}
+                          action="paste"
+                          onComplete={async () => {
+                            await updateLastUsed(command.id);
+                          }}
+                        />
+                      }
+                    />
+                    <Action.Push
+                      title="Copy to Clipboard"
+                      icon={Icon.CopyClipboard}
+                      shortcut={{ modifiers: ['ctrl'], key: 'c' }}
+                      target={<VariableForm command={command} action="copy" />}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Action.Paste
+                      title="Paste Command"
+                      icon={Icon.Terminal}
+                      content={command.command}
+                      onPaste={() => handlePaste(command)}
+                    />
+                    <Action.CopyToClipboard
+                      title="Copy to Clipboard"
+                      icon={Icon.CopyClipboard}
+                      shortcut={{ modifiers: ['ctrl'], key: 'c' }}
+                      content={command.command}
+                    />
+                  </>
+                )}
                 <Action.Push
                   title="Edit Command"
                   icon={Icon.Pencil}
-                  shortcut={{ modifiers: ["ctrl"], key: "e" }}
+                  shortcut={{ modifiers: ['ctrl'], key: 'e' }}
                   target={
                     <CommandForm
                       command={command}
@@ -228,23 +256,23 @@ export default function Command() {
                   }
                 />
                 <Action
-                  title={command.isPinned ? "Unpin Command" : "Pin Command"}
+                  title={command.isPinned ? 'Unpin Command' : 'Pin Command'}
                   icon={Icon.Pin}
-                  shortcut={{ modifiers: ["ctrl"], key: "p" }}
+                  shortcut={{ modifiers: ['ctrl'], key: 'p' }}
                   onAction={() => handleTogglePin(command)}
                 />
                 <Action
                   title="Delete Command"
                   icon={Icon.Trash}
                   style={Action.Style.Destructive}
-                  shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                  shortcut={{ modifiers: ['ctrl'], key: 'x' }}
                   onAction={() => handleDelete(command)}
                 />
                 <ActionPanel.Section title="New">
                   <Action.Push
                     title="Add New Command"
                     icon={Icon.Plus}
-                    shortcut={{ modifiers: ["ctrl"], key: "n" }}
+                    shortcut={{ modifiers: ['ctrl'], key: 'n' }}
                     target={
                       <CommandForm onCommandSaved={handleOnSavedCommand} />
                     }

@@ -1,9 +1,8 @@
-import { closeMainWindow } from "@vicinae/api";
-import ImportForm from "./components/import-form";
+import ImportForm from './components/import-form';
 
 export default function Command() {
   const handleImportComplete = async () => {
-    //await closeMainWindow();
+    // Form will handle closing after import
   };
 
   return <ImportForm onImportComplete={handleImportComplete} />;

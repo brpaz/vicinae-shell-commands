@@ -5,9 +5,9 @@ import {
   Icon,
   showToast,
   Toast,
-} from "@vicinae/api";
-import { useState } from "react";
-import { importCommands } from "../storage";
+} from '@vicinae/api';
+import { useState } from 'react';
+import { importCommands } from '../storage';
 
 interface ImportFormProps {
   onImportComplete: () => void | Promise<void>;
@@ -18,22 +18,22 @@ export default function ImportForm({ onImportComplete }: ImportFormProps) {
 
   async function handleSubmit(values: Form.Values) {
     const filePath = values.filePath as string;
-    const mode = values.mode as "merge" | "replace";
+    const mode = values.mode as 'merge' | 'replace';
 
     if (!filePath) {
-      setFilePathError("Please select a file");
+      setFilePathError('Please select a file');
       return;
     }
 
     try {
-      const { readFile } = await import("node:fs/promises");
-      const jsonData = await readFile(filePath, "utf-8");
+      const { readFile } = await import('node:fs/promises');
+      const jsonData = await readFile(filePath, 'utf-8');
 
       const result = await importCommands(jsonData, mode);
 
       await showToast({
         style: Toast.Style.Success,
-        title: "Import complete",
+        title: 'Import complete',
         message: `Imported: ${result.imported}, Skipped: ${result.skipped}`,
       });
 
@@ -43,7 +43,7 @@ export default function ImportForm({ onImportComplete }: ImportFormProps) {
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,
-        title: "Import failed",
+        title: 'Import failed',
         message: String(error),
       });
     }
