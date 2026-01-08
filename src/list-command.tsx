@@ -2,17 +2,18 @@ import {
   Action,
   ActionPanel,
   Alert,
-  closeMainWindow,
-  confirmAlert,
   Icon,
   List,
-  showToast,
   Toast,
-  useNavigation,
+  showToast,
+  open,
+  closeMainWindow,
+  confirmAlert,
 } from '@vicinae/api';
 import { useEffect, useMemo, useState } from 'react';
 import CommandForm from './components/command-form';
 import VariableForm from './components/variable-form';
+import CommandPreview from './components/command-preview';
 import {
   deleteCommand,
   getAllCommands,
@@ -20,31 +21,12 @@ import {
   updateLastUsed,
 } from './storage';
 import type { ShellCommand } from './types';
-import { hasVariables } from './variables';
-
-function formatRelativeTime(timestamp?: number): string {
-  if (!timestamp) return 'Never used';
-
-  const now = Date.now();
-  const diff = now - timestamp;
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  return 'Just now';
-}
+import { gotoList } from './navigation';
+import { hasVariables } from './utils/variables';
 
 function sortCommands(commands: ShellCommand[]): ShellCommand[] {
   return commands.sort((a, b) => {
-    // Pinned commands first
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
-
-    // Then by last used (most recent first)
+    // Sort by last used (most recent first)
     const aLastUsed = a.lastUsed || 0;
     const bLastUsed = b.lastUsed || 0;
     return bLastUsed - aLastUsed;
@@ -55,7 +37,6 @@ export default function Command() {
   const [allCommands, setAllCommands] = useState<ShellCommand[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedTag, setSelectedTag] = useState<string>('all');
-  const navigation = useNavigation();
 
   // Load all commands from storage
   const loadCommands = async () => {
@@ -89,6 +70,15 @@ export default function Command() {
     return allCommands.filter((cmd) => cmd.tags.includes(selectedTag));
   }, [allCommands, selectedTag]);
 
+  // Separate pinned and unpinned commands
+  const pinnedCommands = useMemo(() => {
+    return commands.filter((cmd) => cmd.isPinned);
+  }, [commands]);
+
+  const unpinnedCommands = useMemo(() => {
+    return commands.filter((cmd) => !cmd.isPinned);
+  }, [commands]);
+
   // Get all unique tags from all commands (not filtered)
   const allTags = useMemo(() => {
     const tagsSet = new Set<string>();
@@ -101,7 +91,7 @@ export default function Command() {
   }, [allCommands]);
 
   const handleOnSavedCommand = () => {
-    navigation.pop();
+    gotoList();
   };
 
   const handlePaste = async (command: ShellCommand) => {
@@ -138,9 +128,95 @@ export default function Command() {
     }
   };
 
+  const renderCommand = (command: ShellCommand) => (
+    <List.Item
+      key={command.id}
+      title={command.description || 'No description'}
+      subtitle={command.command}
+      keywords={[command.command]}
+      icon={command.isPinned ? Icon.Pin : Icon.Terminal}
+      detail={<CommandPreview command={command} />}
+      actions={
+        <ActionPanel>
+          {hasVariables(command.command) ? (
+            <>
+              <Action.Push
+                title="Paste Command"
+                icon={Icon.Terminal}
+                target={
+                  <VariableForm
+                    command={command}
+                    action="paste"
+                    onComplete={async () => {
+                      await updateLastUsed(command.id);
+                    }}
+                  />
+                }
+              />
+              <Action.Push
+                title="Copy to Clipboard"
+                icon={Icon.CopyClipboard}
+                shortcut={{ modifiers: ['ctrl'], key: 'c' }}
+                target={<VariableForm command={command} action="copy" />}
+              />
+            </>
+          ) : (
+            <>
+              <Action.Paste
+                title="Paste Command"
+                icon={Icon.Terminal}
+                content={command.command}
+                onPaste={() => handlePaste(command)}
+              />
+              <Action.CopyToClipboard
+                title="Copy to Clipboard"
+                icon={Icon.CopyClipboard}
+                shortcut={{ modifiers: ['ctrl'], key: 'c' }}
+                content={command.command}
+              />
+            </>
+          )}
+          <Action.Push
+            title="Edit Command"
+            icon={Icon.Pencil}
+            shortcut={{ modifiers: ['ctrl'], key: 'e' }}
+            target={
+              <CommandForm
+                command={command}
+                onCommandSaved={handleOnSavedCommand}
+              />
+            }
+          />
+          <Action
+            title={command.isPinned ? 'Unpin Command' : 'Pin Command'}
+            icon={Icon.Pin}
+            shortcut={{ modifiers: ['ctrl'], key: 'p' }}
+            onAction={() => handleTogglePin(command)}
+          />
+          <Action
+            title="Delete Command"
+            icon={Icon.Trash}
+            style={Action.Style.Destructive}
+            shortcut={{ modifiers: ['ctrl'], key: 'd' }}
+            onAction={() => handleDelete(command)}
+          />
+          <ActionPanel.Section title="New">
+            <Action.Push
+              title="Add New Command"
+              icon={Icon.Plus}
+              shortcut={{ modifiers: ['ctrl'], key: 'n' }}
+              target={<CommandForm onCommandSaved={handleOnSavedCommand} />}
+            />
+          </ActionPanel.Section>
+        </ActionPanel>
+      }
+    />
+  );
+
   return (
     <List
       isLoading={isLoading}
+      isShowingDetail={true}
       searchBarPlaceholder="Search commands..."
       searchBarAccessory={
         allTags.length > 0 ? (
@@ -170,16 +246,8 @@ export default function Command() {
       {commands.length === 0 ? (
         !isLoading ? (
           <List.EmptyView
-            title={
-              selectedTag === 'all'
-                ? 'No shell commands saved'
-                : 'No commands with this tag'
-            }
-            description={
-              selectedTag === 'all'
-                ? 'Add your first command to get started'
-                : 'Try selecting a different tag'
-            }
+            title="No Commands found"
+            description="Add your first command to get started"
             actions={
               <ActionPanel>
                 <Action.Push
@@ -192,96 +260,20 @@ export default function Command() {
           />
         ) : null
       ) : (
-        commands.map((command) => (
-          <List.Item
-            key={command.id}
-            title={command.command}
-            subtitle={command.description}
-            icon={command.isPinned ? Icon.Pin : Icon.Terminal}
-            accessories={[
-              ...(command.tags.length > 0
-                ? command.tags.map((tag) => ({ text: `#${tag}` }))
-                : []),
-              { text: formatRelativeTime(command.lastUsed) },
-            ]}
-            actions={
-              <ActionPanel>
-                {hasVariables(command.command) ? (
-                  <>
-                    <Action.Push
-                      title="Paste Command"
-                      icon={Icon.Terminal}
-                      target={
-                        <VariableForm
-                          command={command}
-                          action="paste"
-                          onComplete={async () => {
-                            await updateLastUsed(command.id);
-                          }}
-                        />
-                      }
-                    />
-                    <Action.Push
-                      title="Copy to Clipboard"
-                      icon={Icon.CopyClipboard}
-                      shortcut={{ modifiers: ['ctrl'], key: 'c' }}
-                      target={<VariableForm command={command} action="copy" />}
-                    />
-                  </>
-                ) : (
-                  <>
-                    <Action.Paste
-                      title="Paste Command"
-                      icon={Icon.Terminal}
-                      content={command.command}
-                      onPaste={() => handlePaste(command)}
-                    />
-                    <Action.CopyToClipboard
-                      title="Copy to Clipboard"
-                      icon={Icon.CopyClipboard}
-                      shortcut={{ modifiers: ['ctrl'], key: 'c' }}
-                      content={command.command}
-                    />
-                  </>
-                )}
-                <Action.Push
-                  title="Edit Command"
-                  icon={Icon.Pencil}
-                  shortcut={{ modifiers: ['ctrl'], key: 'e' }}
-                  target={
-                    <CommandForm
-                      command={command}
-                      onCommandSaved={handleOnSavedCommand}
-                    />
-                  }
-                />
-                <Action
-                  title={command.isPinned ? 'Unpin Command' : 'Pin Command'}
-                  icon={Icon.Pin}
-                  shortcut={{ modifiers: ['ctrl'], key: 'p' }}
-                  onAction={() => handleTogglePin(command)}
-                />
-                <Action
-                  title="Delete Command"
-                  icon={Icon.Trash}
-                  style={Action.Style.Destructive}
-                  shortcut={{ modifiers: ['ctrl'], key: 'x' }}
-                  onAction={() => handleDelete(command)}
-                />
-                <ActionPanel.Section title="New">
-                  <Action.Push
-                    title="Add New Command"
-                    icon={Icon.Plus}
-                    shortcut={{ modifiers: ['ctrl'], key: 'n' }}
-                    target={
-                      <CommandForm onCommandSaved={handleOnSavedCommand} />
-                    }
-                  />
-                </ActionPanel.Section>
-              </ActionPanel>
-            }
-          />
-        ))
+        <>
+          {pinnedCommands.length > 0 && (
+            <List.Section title="Pinned">
+              {pinnedCommands.map(renderCommand)}
+            </List.Section>
+          )}
+          {unpinnedCommands.length > 0 && (
+            <List.Section
+              title={pinnedCommands.length > 0 ? 'Commands' : undefined}
+            >
+              {unpinnedCommands.map(renderCommand)}
+            </List.Section>
+          )}
+        </>
       )}
     </List>
   );
