@@ -2,18 +2,19 @@ import {
   Action,
   ActionPanel,
   Alert,
-  Icon,
-  List,
-  Toast,
-  showToast,
-  open,
   closeMainWindow,
   confirmAlert,
+  Icon,
+  List,
+  open,
+  showToast,
+  Toast,
 } from '@vicinae/api';
 import { useEffect, useMemo, useState } from 'react';
 import CommandForm from './components/command-form';
-import VariableForm from './components/variable-form';
 import CommandPreview from './components/command-preview';
+import VariableForm from './components/variable-form';
+import { gotoList } from './navigation';
 import {
   deleteCommand,
   getAllCommands,
@@ -21,7 +22,6 @@ import {
   updateLastUsed,
 } from './storage';
 import type { ShellCommand } from './types';
-import { gotoList } from './navigation';
 import { hasVariables } from './utils/variables';
 
 function sortCommands(commands: ShellCommand[]): ShellCommand[] {

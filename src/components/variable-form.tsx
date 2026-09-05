@@ -1,21 +1,21 @@
 import {
   Action,
   ActionPanel,
-  Form,
-  Icon,
   Clipboard,
   closeMainWindow,
-} from "@vicinae/api";
-import type { ShellCommand } from "../types";
+  Form,
+  Icon,
+} from '@vicinae/api';
+import type { ShellCommand } from '../types';
 import {
   extractVariablesWithMetadata,
   replaceVariables,
   VariableType,
-} from "../utils/variables";
+} from '../utils/variables';
 
 interface VariableFormProps {
   command: ShellCommand;
-  action: "paste" | "copy";
+  action: 'paste' | 'copy';
   onComplete?: () => void | Promise<void>;
 }
 
@@ -34,17 +34,17 @@ export default function VariableForm({
 
       // Handle file/directory pickers which return arrays
       if (Array.isArray(value)) {
-        value = value.length > 0 ? value[0] : "";
+        value = value.length > 0 ? value[0] : '';
       }
 
       // Use the submitted value, or fall back to default value if provided
-      variableValues[variable.name] = value || variable.defaultValue || "";
+      variableValues[variable.name] = value || variable.defaultValue || '';
     }
 
     // Replace variables in the command
     const finalCommand = replaceVariables(command.command, variableValues);
 
-    if (action === "paste") {
+    if (action === 'paste') {
       // Paste to clipboard and close
       await Clipboard.paste(finalCommand);
       await closeMainWindow();
@@ -64,8 +64,8 @@ export default function VariableForm({
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title={action === "paste" ? "Paste Command" : "Copy to Clipboard"}
-            icon={action === "paste" ? Icon.Terminal : Icon.CopyClipboard}
+            title={action === 'paste' ? 'Paste Command' : 'Copy to Clipboard'}
+            icon={action === 'paste' ? Icon.Terminal : Icon.CopyClipboard}
             onSubmit={handleSubmit}
           />
         </ActionPanel>
@@ -131,7 +131,7 @@ export default function VariableForm({
             key={variable.name}
             id={variable.name}
             title={variable.name}
-            defaultValue={variable.defaultValue || ""}
+            defaultValue={variable.defaultValue || ''}
             autoFocus={index === 0}
           />
         );

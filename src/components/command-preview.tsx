@@ -1,4 +1,4 @@
-import { List, Icon } from '@vicinae/api';
+import { Icon, List } from '@vicinae/api';
 import type { ShellCommand } from '../types';
 import { formatRelativeTime } from '../utils/date-format';
 
