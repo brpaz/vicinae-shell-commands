@@ -54,6 +54,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.12",
     "@types/react": "19.3.0",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }
