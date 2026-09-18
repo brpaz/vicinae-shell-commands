@@ -181,7 +181,8 @@ export function replaceVariables(
   try {
     // Clean the template by removing metadata
     const cleanedTemplate = cleanTemplate(template);
-    const compiled = Handlebars.compile(cleanedTemplate);
+    // Values go to a shell, not HTML: HTML escaping would mangle & < > quotes.
+    const compiled = Handlebars.compile(cleanedTemplate, { noEscape: true });
     return compiled(values);
   } catch (error) {
     console.error('Failed to replace variables:', error);
