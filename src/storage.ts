@@ -2,6 +2,8 @@ import { LocalStorage } from '@vicinae/api';
 import type { ShellCommand } from './types';
 
 const STORAGE_KEY = 'shell-commands';
+const VARIABLE_HISTORY_KEY = 'variable-history';
+const APPROVED_OPTION_COMMANDS_KEY = 'approved-option-commands';
 
 export async function getAllCommands(): Promise<ShellCommand[]> {
   const data = await LocalStorage.getItem(STORAGE_KEY);
@@ -34,14 +36,42 @@ export async function deleteCommand(id: string): Promise<void> {
   await LocalStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
-export async function updateLastUsed(id: string): Promise<void> {
+export async function recordUse(id: string): Promise<void> {
   const commands = await getAllCommands();
   const command = commands.find((c) => c.id === id);
 
   if (command) {
+    // Commands used before use counts were tracked count as a single use.
+    const previousUses = command.useCount ?? (command.lastUsed ? 1 : 0);
+    command.useCount = previousUses + 1;
     command.lastUsed = Date.now();
     await LocalStorage.setItem(STORAGE_KEY, JSON.stringify(commands));
   }
+}
+
+export async function getVariableHistory(): Promise<Record<string, string>> {
+  const data = await LocalStorage.getItem(VARIABLE_HISTORY_KEY);
+  if (!data || typeof data !== 'string') {
+    return {};
+  }
+  try {
+    return JSON.parse(data);
+  } catch {
+    return {};
+  }
+}
+
+export async function saveVariableHistory(
+  values: Record<string, string>
+): Promise<void> {
+  if (Object.keys(values).length === 0) {
+    return;
+  }
+  const history = await getVariableHistory();
+  await LocalStorage.setItem(
+    VARIABLE_HISTORY_KEY,
+    JSON.stringify({ ...history, ...values })
+  );
 }
 
 export async function togglePin(id: string): Promise<void> {
@@ -52,6 +82,30 @@ export async function togglePin(id: string): Promise<void> {
     command.isPinned = !command.isPinned;
     await LocalStorage.setItem(STORAGE_KEY, JSON.stringify(commands));
   }
+}
+
+/** Shell commands the user has allowed to run to fill in variable options. */
+export async function getApprovedOptionCommands(): Promise<Set<string>> {
+  const data = await LocalStorage.getItem(APPROVED_OPTION_COMMANDS_KEY);
+  if (!data || typeof data !== 'string') {
+    return new Set();
+  }
+  try {
+    return new Set(JSON.parse(data));
+  } catch {
+    return new Set();
+  }
+}
+
+export async function approveOptionCommands(commands: string[]): Promise<void> {
+  const approved = await getApprovedOptionCommands();
+  for (const command of commands) {
+    approved.add(command);
+  }
+  await LocalStorage.setItem(
+    APPROVED_OPTION_COMMANDS_KEY,
+    JSON.stringify([...approved])
+  );
 }
 
 export function generateId(): string {

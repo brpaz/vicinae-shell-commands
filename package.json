@@ -32,10 +32,45 @@
       "mode": "view"
     },
     {
+      "name": "import-history-command",
+      "title": "Import from Shell History",
+      "description": "Pick frequently used commands from your bash, zsh or fish history",
+      "mode": "view",
+      "preferences": [
+        {
+          "name": "historyFile",
+          "type": "textfield",
+          "title": "History File",
+          "description": "Shell history file to read. Leave empty to detect ~/.zsh_history, ~/.bash_history and fish history automatically.",
+          "placeholder": "~/.local/share/zsh/history",
+          "required": false
+        }
+      ]
+    },
+    {
       "name": "export-command",
       "title": "Export Commands",
       "description": "Export shell commands to a JSON file",
       "mode": "view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "terminal",
+      "type": "textfield",
+      "title": "Terminal Command",
+      "description": "Terminal used by Run in Terminal, with any arguments needed to execute a command, e.g. 'kitty', 'alacritty -e' or 'gnome-terminal --'.",
+      "placeholder": "xdg-terminal-exec",
+      "default": "xdg-terminal-exec",
+      "required": false
+    },
+    {
+      "name": "workingDirectory",
+      "type": "textfield",
+      "title": "Working Directory",
+      "description": "Directory where shell commands behind {{name=$(command)}} placeholders run, unless the command has a {{cwd=@directory}} variable. Defaults to your home directory.",
+      "placeholder": "~/projects",
+      "required": false
     }
   ],
   "scripts": {
@@ -45,7 +80,8 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "typecheck": "tsc --noEmit",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "test": "vitest run"
   },
   "dependencies": {
     "@vicinae/api": "^0.28.0",
@@ -54,6 +90,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.12",
     "@types/react": "19.2.18",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "5.0.1"
   }
 }

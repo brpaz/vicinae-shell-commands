@@ -15,23 +15,11 @@ import CommandForm from './components/command-form';
 import CommandPreview from './components/command-preview';
 import VariableForm from './components/variable-form';
 import { gotoList } from './navigation';
-import {
-  deleteCommand,
-  getAllCommands,
-  togglePin,
-  updateLastUsed,
-} from './storage';
+import { deleteCommand, getAllCommands, recordUse, togglePin } from './storage';
 import type { ShellCommand } from './types';
+import { sortByFrecency } from './utils/frecency';
+import { runInTerminal } from './utils/terminal';
 import { hasVariables } from './utils/variables';
-
-function sortCommands(commands: ShellCommand[]): ShellCommand[] {
-  return commands.sort((a, b) => {
-    // Sort by last used (most recent first)
-    const aLastUsed = a.lastUsed || 0;
-    const bLastUsed = b.lastUsed || 0;
-    return bLastUsed - aLastUsed;
-  });
-}
 
 export default function Command() {
   const [allCommands, setAllCommands] = useState<ShellCommand[]>([]);
@@ -43,7 +31,7 @@ export default function Command() {
     try {
       setIsLoading(true);
       const fetchedCommands = await getAllCommands();
-      const sortedCommands = sortCommands(fetchedCommands);
+      const sortedCommands = sortByFrecency(fetchedCommands);
       setAllCommands(sortedCommands);
     } catch {
       await showToast({
@@ -95,7 +83,22 @@ export default function Command() {
   };
 
   const handlePaste = async (command: ShellCommand) => {
-    await updateLastUsed(command.id);
+    await recordUse(command.id);
+    await closeMainWindow();
+  };
+
+  const handleRun = async (command: ShellCommand) => {
+    try {
+      await runInTerminal(command.command);
+    } catch (error) {
+      await showToast({
+        style: Toast.Style.Failure,
+        title: 'Failed to run command',
+        message: String(error),
+      });
+      return;
+    }
+    await recordUse(command.id);
     await closeMainWindow();
   };
 
@@ -131,8 +134,8 @@ export default function Command() {
   const renderCommand = (command: ShellCommand) => (
     <List.Item
       key={command.id}
-      title={command.description || 'No description'}
-      subtitle={command.command}
+      title={command.description || command.command}
+      subtitle={command.description ? command.command : undefined}
       keywords={[command.command]}
       icon={command.isPinned ? Icon.Pin : Icon.Terminal}
       detail={<CommandPreview command={command} />}
@@ -147,9 +150,7 @@ export default function Command() {
                   <VariableForm
                     command={command}
                     action="paste"
-                    onComplete={async () => {
-                      await updateLastUsed(command.id);
-                    }}
+                    onComplete={() => recordUse(command.id)}
                   />
                 }
               />
@@ -157,7 +158,25 @@ export default function Command() {
                 title="Copy to Clipboard"
                 icon={Icon.CopyClipboard}
                 shortcut={{ modifiers: ['ctrl'], key: 'c' }}
-                target={<VariableForm command={command} action="copy" />}
+                target={
+                  <VariableForm
+                    command={command}
+                    action="copy"
+                    onComplete={() => recordUse(command.id)}
+                  />
+                }
+              />
+              <Action.Push
+                title="Run in Terminal"
+                icon={Icon.Play}
+                shortcut={{ modifiers: ['ctrl'], key: 'r' }}
+                target={
+                  <VariableForm
+                    command={command}
+                    action="run"
+                    onComplete={() => recordUse(command.id)}
+                  />
+                }
               />
             </>
           ) : (
@@ -173,6 +192,13 @@ export default function Command() {
                 icon={Icon.CopyClipboard}
                 shortcut={{ modifiers: ['ctrl'], key: 'c' }}
                 content={command.command}
+                onCopy={() => recordUse(command.id)}
+              />
+              <Action
+                title="Run in Terminal"
+                icon={Icon.Play}
+                shortcut={{ modifiers: ['ctrl'], key: 'r' }}
+                onAction={() => handleRun(command)}
               />
             </>
           )}
@@ -183,6 +209,17 @@ export default function Command() {
             target={
               <CommandForm
                 command={command}
+                onCommandSaved={handleOnSavedCommand}
+              />
+            }
+          />
+          <Action.Push
+            title="Duplicate Command"
+            icon={Icon.Duplicate}
+            shortcut={{ modifiers: ['ctrl', 'shift'], key: 'd' }}
+            target={
+              <CommandForm
+                duplicateOf={command}
                 onCommandSaved={handleOnSavedCommand}
               />
             }

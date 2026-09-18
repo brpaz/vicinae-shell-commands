@@ -12,18 +12,22 @@ import type { ShellCommand } from '../types';
 
 interface CommandFormProps {
   command?: ShellCommand;
+  /** Prefills the form from an existing command, saving it as a new one. */
+  duplicateOf?: ShellCommand;
   initialCommand?: string;
   onCommandSaved?: () => void | Promise<void>;
 }
 
 export default function CommandForm({
   command,
+  duplicateOf,
   initialCommand,
   onCommandSaved,
 }: CommandFormProps = {}) {
   const [commandError, setCommandError] = useState<string | undefined>();
 
   const isEditing = !!command;
+  const prefill = command ?? duplicateOf;
 
   async function handleSubmit(values: Form.Values) {
     // Validate
@@ -51,6 +55,7 @@ export default function CommandForm({
       tags,
       createdAt: command?.createdAt || Date.now(),
       lastUsed: command?.lastUsed,
+      useCount: command?.useCount,
       isPinned: (values.isPinned as boolean) ?? false,
     };
 
@@ -93,7 +98,7 @@ export default function CommandForm({
       <Form.TextArea
         id="command"
         title="Command"
-        defaultValue={command?.command || initialCommand}
+        defaultValue={prefill?.command || initialCommand}
         error={commandError}
         onChange={() => setCommandError(undefined)}
         autoFocus
@@ -101,17 +106,17 @@ export default function CommandForm({
       <Form.TextArea
         id="description"
         title="Description"
-        defaultValue={command?.description}
+        defaultValue={prefill?.description}
       />
       <Form.TextField
         id="tags"
         title="Tags"
-        defaultValue={command?.tags.join(', ')}
+        defaultValue={prefill?.tags.join(', ')}
       />
       <Form.Checkbox
         id="isPinned"
         label="Pin this command"
-        defaultValue={command?.isPinned || false}
+        defaultValue={prefill?.isPinned || false}
       />
     </Form>
   );

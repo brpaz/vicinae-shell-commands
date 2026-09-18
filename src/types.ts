@@ -5,5 +5,6 @@ export interface ShellCommand {
   tags: string[];
   createdAt: number;
   lastUsed?: number;
+  useCount?: number;
   isPinned: boolean;
 }
