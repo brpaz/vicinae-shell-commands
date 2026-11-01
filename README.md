@@ -75,23 +75,29 @@ Commands support powerful variable substitution using Handlebars-style syntax. W
 ### Basic Variable Syntax
 
 #### 1. Simple Variable
+
 ```bash
 ssh {{user}}@{{host}}
 ```
+
 - Renders as text field with empty default
 - User must provide value
 
 #### 2. Variable with Default Value
+
 ```bash
 ssh {{user=admin}}@{{host=localhost}} -p {{port=22}}
 ```
+
 - Renders as text field pre-filled with default
 - User can override or accept default
 
 #### 3. Dropdown Options
+
 ```bash
 git commit -m "{{type=feat|fix|docs|style|refactor}}: {{message}}"
 ```
+
 - Renders as dropdown with selectable options
 - Options are pipe-separated: `option1|option2|option3`
 - First option selected by default
@@ -146,17 +152,17 @@ rsync -avz source/ {{dest=@directory}}
 
 ### Variable Syntax Reference
 
-| Syntax | Example | Description |
-|--------|---------|-------------|
-| `{{name}}` | `{{user}}` | Simple text input |
-| `{{name=default}}` | `{{port=22}}` | Text input with default value |
-| `{{name=opt1\|opt2}}` | `{{env=dev\|prod}}` | Dropdown with options |
-| `{{name=@now}}` | `{{timestamp=@now}}` | Auto-generated timestamp |
-| `{{name=@today}}` | `{{date=@today}}` | Auto-generated date (ISO) |
-| `{{name=@date}}` | `{{date=@date}}` | Auto-generated date (compact) |
-| `{{name=@time}}` | `{{time=@time}}` | Auto-generated time |
-| `{{name=@file}}` | `{{source=@file}}` | File picker dialog |
-| `{{name=@directory}}` | `{{dest=@directory}}` | Directory picker dialog |
+| Syntax                | Example               | Description                   |
+| --------------------- | --------------------- | ----------------------------- |
+| `{{name}}`            | `{{user}}`            | Simple text input             |
+| `{{name=default}}`    | `{{port=22}}`         | Text input with default value |
+| `{{name=opt1\|opt2}}` | `{{env=dev\|prod}}`   | Dropdown with options         |
+| `{{name=@now}}`       | `{{timestamp=@now}}`  | Auto-generated timestamp      |
+| `{{name=@today}}`     | `{{date=@today}}`     | Auto-generated date (ISO)     |
+| `{{name=@date}}`      | `{{date=@date}}`      | Auto-generated date (compact) |
+| `{{name=@time}}`      | `{{time=@time}}`      | Auto-generated time           |
+| `{{name=@file}}`      | `{{source=@file}}`    | File picker dialog            |
+| `{{name=@directory}}` | `{{dest=@directory}}` | Directory picker dialog       |
 
 ### Real-World Examples
 
@@ -243,25 +249,25 @@ Form shows:
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Enter` | Paste command into active window (or show variable form if needed) |
-| `Ctrl+C` | Copy command to clipboard (or show variable form if needed) |
-| `Ctrl+E` | Edit command |
-| `Ctrl+P` | Pin/unpin command |
-| `Ctrl+X` | Delete command (with confirmation) |
-| `Ctrl+N` | Add new command (from list view) |
+| Shortcut | Action                                                             |
+| -------- | ------------------------------------------------------------------ |
+| `Enter`  | Paste command into active window (or show variable form if needed) |
+| `Ctrl+C` | Copy command to clipboard (or show variable form if needed)        |
+| `Ctrl+E` | Edit command                                                       |
+| `Ctrl+P` | Pin/unpin command                                                  |
+| `Ctrl+X` | Delete command (with confirmation)                                 |
+| `Ctrl+N` | Add new command (from list view)                                   |
 
 ## Commands
 
 The extension provides 4 commands accessible from Vicinae:
 
-| Command | Description |
-|---------|-------------|
-| **Shell Commands** | List and manage all saved commands |
-| **New Shell Command** | Create a new command |
-| **Import Shell Commands** | Import commands from JSON file |
-| **Export Shell Commands** | Export commands to JSON file |
+| Command                   | Description                        |
+| ------------------------- | ---------------------------------- |
+| **Shell Commands**        | List and manage all saved commands |
+| **New Shell Command**     | Create a new command               |
+| **Import Shell Commands** | Import commands from JSON file     |
+| **Export Shell Commands** | Export commands to JSON file       |
 
 ## Examples
 
